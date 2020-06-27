@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  slackmirror:
+    image: omercnet/slackmoderator
+    build: .
+    environment:
+      LOG_LEVEL: INFO 
+      PORT: 3000
+      SLACK_SIGNING_SECRET: 
+      SLACK_BOT_TOKEN: 
+      SLACK_ADMIN_TOKEN: 
+      MODERATE_CONTENT_KEY: 
+    ports:
+      - 3000:3000
+
