@@ -10,6 +10,7 @@ import sys
 import logging
 import requests
 import json_logging
+
 from flask import Flask
 from flask.logging import create_logger
 from slack import WebClient
@@ -21,6 +22,7 @@ from slackeventsapi import SlackEventAdapter
 
 load_dotenv()
 
+PORT = os.environ.get('PORT', 3000)
 DEBUG = os.environ.get('DEBUG', False)
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
 REPLACE_TEXT = os.environ.get('REPLACE_TEXT', '***')
@@ -88,4 +90,4 @@ def handle_message(message):
         logger.error('Failed due to %s', exc.response['error'])
 
 if __name__ == '__main__':
-    app.run(port=os.environ.get('PORT', 3000), debug=DEBUG)
+    app.run(port=PORT, debug=DEBUG)

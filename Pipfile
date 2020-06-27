@@ -15,6 +15,7 @@ flask = "*"
 eventlet = "*"
 flask-cors = "*"
 requests = "*"
+waitress = "*"
 
 [requires]
 python_version = "3.8"
