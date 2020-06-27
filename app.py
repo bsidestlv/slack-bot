@@ -1,8 +1,8 @@
 """
-    Slack Moderator
+    BSidesTLV Slack Bot
 
-    Slack bot that evaluates messages and attachments against moderatecontent.com API
-
+    * Moderator: Evaluates messages and attachments against moderatecontent.com API
+    * CTFd: Announces new solves
 """
 
 import os
@@ -10,6 +10,7 @@ import sys
 import logging
 import requests
 import json_logging
+from requests.compat import urljoin
 
 from flask import Flask
 from flask.logging import create_logger
@@ -22,24 +23,29 @@ from slackeventsapi import SlackEventAdapter
 
 load_dotenv()
 
-PORT = os.environ.get('PORT', 3000)
-DEBUG = os.environ.get('DEBUG', False)
-LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
-REPLACE_TEXT = os.environ.get('REPLACE_TEXT', '***')
+PORT = int(os.getenv('PORT', '3000'))
+DEBUG = os.getenv('DEBUG')
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
+REPLACE_TEXT = os.getenv('REPLACE_TEXT', '***')
 BAD_MESSAGE_POST = 'Your message `{:s}` was removed because it had bad words.'
 
-SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
-SLACK_ADMIN_TOKEN = os.environ.get('SLACK_ADMIN_TOKEN')
-SLACK_SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET')
-MODERATE_CONTENT_KEY = os.environ.get('MODERATE_CONTENT_KEY')
+CTFD_TOKEN = os.getenv('CTFD_TOKEN')
+SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
+SLACK_ADMIN_TOKEN = os.getenv('SLACK_ADMIN_TOKEN')
+SLACK_SIGNING_SECRET = os.getenv('SLACK_SIGNING_SECRET')
+MODERATE_CONTENT_KEY = os.getenv('MODERATE_CONTENT_KEY')
+CTFD_CHANNELS = os.getenv('CTFD_CHANNELS').split(',')
 
 logging.basicConfig(level=LOG_LEVEL)
 
 app = Flask('slackmoderator')
+CORS(app)
+
 logger = create_logger(app)
 
-if not all([SLACK_SIGNING_SECRET, MODERATE_CONTENT_KEY, SLACK_BOT_TOKEN]):
-    logger.critical('SLACK_SIGNING_SECRET, MODERATE_CONTENT_KEY, SLACK_BOT_TOKEN must be set.')
+REQUIRED_KEYS = [SLACK_SIGNING_SECRET, MODERATE_CONTENT_KEY, SLACK_BOT_TOKEN, CTFD_TOKEN]
+if not all(REQUIRED_KEYS):
+    logger.critical('%s must be set.', REQUIRED_KEYS)
     sys.exit(1)
 
 if not DEBUG:
@@ -49,8 +55,96 @@ if not DEBUG:
 slack_client = WebClient(SLACK_BOT_TOKEN)
 slack_admin_client = WebClient(SLACK_ADMIN_TOKEN)
 slack_events_adapter = SlackEventAdapter(SLACK_SIGNING_SECRET, "/", server=app)
-CORS(app)
 
+ctfd_client = requests.Session()
+ctfd_client.headers.update({'Authorization': f'Token {CTFD_TOKEN}'})
+ctfd_client.headers.update({'Content-type': 'application/json'})
+
+submission_db = []
+
+def ctfd_request(method, url, *args, **kwargs):
+    """ Send request to CTFd. """
+    url = urljoin('https://ctf20.bsidestlv.com/api/v1/', url)
+    res = ctfd_client.request(method.upper(), url, *args, **kwargs)
+    res.raise_for_status()
+    logger.debug('CTFd: Fetch: %s', res.text)
+    res = res.json()
+    if not res.get('success'):
+        raise Exception(f'CTFd: Request failed - {res.text}')
+    return res.get('data')
+
+def ctfd_get_user(i):
+    """ Get CTFd User Name from ID. """
+    logger.debug('CTFd: Fetching user %d', i)
+    return ctfd_request('GET', f'users/{i}')
+
+def ctfd_get_team(i):
+    """ Get CTFd User Name from ID. """
+    logger.debug('CTFd: Fetching team %d', i)
+    return ctfd_request('GET', f'teams/{i}')
+
+@app.route('/cron')
+def check_solves():
+    """ Check for new solves every minute and post to slack. """
+    global submission_db
+
+    submissions = ctfd_request('GET', 'submissions', params={'type': 'correct'})
+    if len(submissions) > len(submission_db):
+        diff = len(submissions)-len(submission_db)
+        logger.debug('CTFd: Got %d new solves!', diff)
+        for solve in submissions[diff-1:]:
+            if not submission_db: # first solve ever
+                submission_db = [{"challenge_id": 0}]
+            user = ctfd_get_user(solve['user']).get('name')
+            team = ctfd_get_team(solve['team'])
+            team_lnk = f"<https://ctf20.bsidestlv.com/teams/{team.get('id')}|{team.get('name')}>"
+            clng = solve['challenge']
+            clng_link = f"<https://ctf20.bsidestlv.com/challenges/{solve['challenge_id']}|{clng.get('name')}>"
+            logger.debug(solve)
+            blocks = [
+                {
+                    "type": "section",
+                    "block_id": "section567",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "" # REPLACE
+                    },
+                    "accessory": {
+                        "type": "image",
+                        "image_url": "", # REPLACE
+                        "alt_text": "" # REPLACE
+                    }
+                },
+                {
+                    "type": "section",
+                    "block_id": "section789",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f":medal: Team {team_lnk} is now ranked *{team.get('place')}* with {team.get('score')} points!"
+                        }
+                    ]
+                }]
+            if any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
+                blocks[0]['text']['text'] = f":flags: {user} (Team: {team.get('name')}) just solved {clng_link}"
+                blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
+                blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
+                blocks.pop() # remove extra section
+            else:
+                blocks[0]['text']['text'] = f"First blood!!!\n\n{user} (Team: {team_lnk}) is _*first*_ to solve {clng_link}"
+                blocks[0]['accessory']['image_url'] = "https://i.imgur.com/eLm2JG3.jpg"
+                blocks[0]['accessory']['alt_text'] = "First Blood!!"
+
+            blocks[0]['text']['text'] += f" and got *{clng.get('value')}* points!"
+            try:
+                for channel in CTFD_CHANNELS:
+                    slack_client.chat_postMessage(channel=channel, blocks=blocks)
+            except SlackApiError as exc:
+                assert exc.response["ok"] is False
+                assert exc.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+                logger.error('Failed due to %s', exc.response['error'])
+        submission_db = submissions
+    return {'ok': True}
 
 def eval_text(event, changed=False):
     """ Evaluate text against moderatecontent and replace message if needed. """
