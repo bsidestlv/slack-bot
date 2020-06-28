@@ -142,8 +142,7 @@ def check_solves():
             blocks[0]['text']['text'] += f" and got *{clng.get('value')}* points!"
             try:
                 for channel in CTFD_CHANNELS:
-                    # slack_client.chat_postMessage(channel=channel, blocks=blocks)
-                    pass
+                    slack_client.chat_postMessage(channel=channel, blocks=blocks)
             except SlackApiError as exc:
                 assert exc.response["ok"] is False
                 assert exc.response["error"]  # str like 'invalid_auth', 'channel_not_found'
