@@ -104,7 +104,7 @@ def check_solves():
             team = ctfd_get_team(solve['team'])
             team_lnk = f"<https://ctf20.bsidestlv.com/teams/{team.get('id')}|{team.get('name')}>"
             clng = solve['challenge']
-            clng_link = f"<https://ctf20.bsidestlv.com/challenges/#{clng.get('name')}|{clng.get('name')}>"
+            clng_link = f"<https://ctf20.bsidestlv.com/challenges#{clng.get('name')}|{clng.get('name')}>"
             logger.debug(solve)
             blocks = [
                 {
