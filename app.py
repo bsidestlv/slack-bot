@@ -108,36 +108,35 @@ def check_solves():
             blocks = [
                 {
                     "type": "section",
-                    "block_id": "section567",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "" # REPLACE
+                        "text": f"*First blood!!!*\n\n{user} (Team: {team_lnk}) is _*first*_ to solve {clng_link}"
                     },
                     "accessory": {
                         "type": "image",
-                        "image_url": "", # REPLACE
-                        "alt_text": "" # REPLACE
+                        "image_url": "https://i.imgur.com/eLm2JG3.jpg",
+                        "alt_text": "First Blood!!"
                     }
                 },
                 {
+                    "type": "divider"
+                },
+                {
                     "type": "section",
-                    "block_id": "section789",
                     "fields": [
                         {
                             "type": "mrkdwn",
                             "text": f":medal: Team {team_lnk} is now ranked *{team.get('place')}* with {team.get('score')} points!"
                         }
                     ]
-                }]
+                }
+            ]
+
             if not len(submission_db) or any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
                 blocks[0]['text']['text'] = f":flags: {user} (Team: {team.get('name')}) just solved {clng_link}"
                 blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
                 blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
                 blocks.pop() # remove extra section
-            else:
-                blocks[0]['text']['text'] = f"First blood!!!\n\n{user} (Team: {team_lnk}) is _*first*_ to solve {clng_link}"
-                blocks[0]['accessory']['image_url'] = "https://i.imgur.com/eLm2JG3.jpg"
-                blocks[0]['accessory']['alt_text'] = "First Blood!!"
 
             blocks[0]['text']['text'] += f" and got *{clng.get('value')}* points!"
             try:
