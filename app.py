@@ -184,7 +184,8 @@ def handle_message(message):
     logger.debug('Event: %s', event)
     try:
         if event.get('text'):
-            eval_text(event, event.get('subtype') == 'message_changed')
+            # eval_text(event, event.get('subtype') == 'message_changed')
+            pass
     except SlackApiError as exc:
         assert exc.response["ok"] is False
         assert exc.response["error"]  # str like 'invalid_auth', 'channel_not_found'
