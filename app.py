@@ -92,7 +92,7 @@ def check_solves():
     if len(submissions) > len(submission_db):
         diff = len(submissions)-len(submission_db)
         logger.debug('CTFd: Got %d new solves!', diff)
-        for solve in submissions[diff-1:]:
+        for solve in submissions[len(submission_db)-1:]:
             if not submission_db: # first solve ever
                 submission_db = [{"challenge_id": 0}]
             user = ctfd_get_user(solve['user']).get('name')
