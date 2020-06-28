@@ -11,6 +11,12 @@ services:
       SLACK_BOT_TOKEN: 
       SLACK_ADMIN_TOKEN: 
       MODERATE_CONTENT_KEY: 
+      REDIS_URL: redis://redis
     ports:
-      - 3000:3000
-
+      - 127.0.0.1:3000:3000
+  redis:
+    image: redis:6-alpine
+    volumes:
+      - .redis:/data
+    ports:
+      - 127.0.0.1:6378:6379

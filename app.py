@@ -8,17 +8,20 @@
 import os
 import sys
 import logging
+
+import redis
 import requests
 import json_logging
-from requests.compat import urljoin
 
-from flask import Flask
-from flask.logging import create_logger
 from slack import WebClient
 from slack.errors import SlackApiError
-from flask_cors import CORS
 from dotenv import load_dotenv
+from flask import Flask
+from flask.logging import create_logger
+from flask_cors import CORS
+from requests.compat import urljoin
 from slackeventsapi import SlackEventAdapter
+from redis_collections import List
 
 
 load_dotenv()
@@ -29,6 +32,7 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
 REPLACE_TEXT = os.getenv('REPLACE_TEXT', '***')
 BAD_MESSAGE_POST = 'Your message `{:s}` was removed because it had bad words.'
 
+REDIS_URL = os.getenv('REDIS_URL')
 CTFD_TOKEN = os.getenv('CTFD_TOKEN')
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
 SLACK_ADMIN_TOKEN = os.getenv('SLACK_ADMIN_TOKEN')
@@ -43,7 +47,7 @@ CORS(app)
 
 logger = create_logger(app)
 
-REQUIRED_KEYS = [SLACK_SIGNING_SECRET, MODERATE_CONTENT_KEY, SLACK_BOT_TOKEN, CTFD_TOKEN]
+REQUIRED_KEYS = [REDIS_URL, SLACK_SIGNING_SECRET, MODERATE_CONTENT_KEY, SLACK_BOT_TOKEN, CTFD_TOKEN]
 if not all(REQUIRED_KEYS):
     logger.critical('%s must be set.', REQUIRED_KEYS)
     sys.exit(1)
@@ -60,7 +64,9 @@ ctfd_client = requests.Session()
 ctfd_client.headers.update({'Authorization': f'Token {CTFD_TOKEN}'})
 ctfd_client.headers.update({'Content-type': 'application/json'})
 
-submission_db = []
+r = redis.Redis().from_url(REDIS_URL)
+submission_db = List(key='ctfd_submission_db', redis=r)
+logger.debug(f'Loading submission_db {list(submission_db)}')
 
 def ctfd_request(method, url, *args, **kwargs):
     """ Send request to CTFd. """
@@ -93,8 +99,6 @@ def check_solves():
         diff = len(submissions)-len(submission_db)
         logger.debug('CTFd: Got %d new solves!', diff)
         for solve in submissions[len(submission_db):]:
-            if not submission_db: # first solve ever
-                submission_db = [{"challenge_id": 0}]
             user = ctfd_get_user(solve['user']).get('name')
             team = ctfd_get_team(solve['team'])
             team_lnk = f"<https://ctf20.bsidestlv.com/teams/{team.get('id')}|{team.get('name')}>"
@@ -125,7 +129,7 @@ def check_solves():
                         }
                     ]
                 }]
-            if any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
+            if not len(submission_db) or any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
                 blocks[0]['text']['text'] = f":flags: {user} (Team: {team.get('name')}) just solved {clng_link}"
                 blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
                 blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
@@ -138,12 +142,14 @@ def check_solves():
             blocks[0]['text']['text'] += f" and got *{clng.get('value')}* points!"
             try:
                 for channel in CTFD_CHANNELS:
-                    slack_client.chat_postMessage(channel=channel, blocks=blocks)
+                    # slack_client.chat_postMessage(channel=channel, blocks=blocks)
+                    pass
             except SlackApiError as exc:
                 assert exc.response["ok"] is False
                 assert exc.response["error"]  # str like 'invalid_auth', 'channel_not_found'
                 logger.error('Failed due to %s', exc.response['error'])
-        submission_db = submissions
+        submission_db.extend(submissions[len(submission_db):])
+        logger.debug(f'Updated submission_db {submission_db} {list(submission_db)}')
     return {'ok': True}
 
 def eval_text(event, changed=False):
