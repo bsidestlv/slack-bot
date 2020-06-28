@@ -99,7 +99,7 @@ def check_solves():
         diff = len(submissions)-len(submission_db)
         logger.debug('CTFd: Got %d new solves!', diff)
         for solve in submissions[len(submission_db):]:
-            user = ctfd_get_user(solve['user']).get('name')
+            user = ctfd_get_user(solve['user'])
             user_lnk = f"<https://ctf20.bsidestlv.com/users/{user.get('id')}|{user.get('name')}>"
             team = ctfd_get_team(solve['team'])
             team_lnk = f"<https://ctf20.bsidestlv.com/teams/{team.get('id')}|{team.get('name')}>"
