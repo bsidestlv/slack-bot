@@ -134,6 +134,7 @@ def check_solves():
             ]
 
             if not len(submission_db) or any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
+                continue # only do first bloods for now
                 blocks[0]['text']['text'] = f":flags: {user_lnk} (Team: {team_lnk}) just solved {clng_link}"
                 blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
                 blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
