@@ -138,6 +138,7 @@ def check_solves():
                 blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
                 blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
                 blocks.pop() # remove extra section
+                blocks.pop() # remove extra section
 
             blocks[0]['text']['text'] += f" and got *{clng.get('value')}* points!"
             try:
