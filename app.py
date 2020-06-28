@@ -100,17 +100,18 @@ def check_solves():
         logger.debug('CTFd: Got %d new solves!', diff)
         for solve in submissions[len(submission_db):]:
             user = ctfd_get_user(solve['user']).get('name')
+            user_lnk = f"<https://ctf20.bsidestlv.com/users/{user.get('id')}|{user.get('name')}>"
             team = ctfd_get_team(solve['team'])
             team_lnk = f"<https://ctf20.bsidestlv.com/teams/{team.get('id')}|{team.get('name')}>"
             clng = solve['challenge']
-            clng_link = f"<https://ctf20.bsidestlv.com/challenges/{solve['challenge_id']}|{clng.get('name')}>"
+            clng_link = f"<https://ctf20.bsidestlv.com/challenges/#{clng.get('name')}|{clng.get('name')}>"
             logger.debug(solve)
             blocks = [
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*First blood!!!*\n\n{user} (Team: {team_lnk}) is _*first*_ to solve {clng_link}"
+                        "text": f"*First blood!!!*\n\n{user_lnk} (Team: {team_lnk}) is _*first*_ to solve {clng_link}"
                     },
                     "accessory": {
                         "type": "image",
@@ -133,7 +134,7 @@ def check_solves():
             ]
 
             if not len(submission_db) or any([sub for sub in submission_db if sub.get('challenge_id') == solve['challenge_id']]):
-                blocks[0]['text']['text'] = f":flags: {user} (Team: {team.get('name')}) just solved {clng_link}"
+                blocks[0]['text']['text'] = f":flags: {user_lnk} (Team: {team.get('name')}) just solved {clng_link}"
                 blocks[0]['accessory']['image_url'] = "https://i.imgur.com/SdvQx2F.jpg"
                 blocks[0]['accessory']['alt_text'] = "Challenge Solved!"
                 blocks.pop() # remove extra section
