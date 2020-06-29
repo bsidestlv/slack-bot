@@ -18,7 +18,7 @@ CTFD_TOKEN = os.getenv('CTFD_TOKEN')
 CTFD_CHANNELS = os.getenv('CTFD_CHANNELS').split(',')
 REQUIRED_KEYS = [CTFD_TOKEN]
 
-CTFdConfig = namedtuple('CTFdConfig', ['post_solve', 'post_solve_img',
+CTFdConfig = namedtuple('CTFdConfig', ['post_solve', 'post_solve_img', 'post_solve_only_top10',
                                        'post_first_blood', 'post_first_blood_img',
                                        'post_place_change', 'post_place_change_img'])
 CTFdCache = namedtuple('CTFdCache', ['users', 'teams', 'solves'])
@@ -57,6 +57,7 @@ class CTFd():
     """Blocks template."""
     config = CTFdConfig(
         post_solve=os.getenv('CTFD_POST_SOLVE'),
+        post_solve_only_top10=os.getenv('CTFD_POST_SOLVE_ONLY_TOP10'),
         post_solve_img=os.getenv('CTFD_POST_SOLVE_IMG', 'https://i.imgur.com/SdvQx2F.jpg'),
         post_first_blood=os.getenv('CTFD_POST_FIRST_BLOOD'),
         post_first_blood_img=os.getenv('CTFD_POST_FIRST_BLOOD_IMG', 'https://i.imgur.com/eLm2JG3.jpg'),
@@ -124,11 +125,12 @@ class CTFd():
         post_to_slack = False
 
         if self.config.post_solve:
-            post_to_slack = True
             self.blocks[0]['text']['text'] = ":flags: {user[lnk]} (Team: {team[lnk]}) just solved {clng[lnk]} and got *{clng[value]}* points!".format(**_fmt)
             self.blocks[0]['accessory']['image_url'] = self.config.post_solve_img
             self.blocks[0]['accessory']['alt_text'] = 'Challenge solved!'
-            self.blocks[2]['text']['text'] = ":medal: Team {team[lnk]} is now ranked *{team[place]}* with {team[score]} points total!".format(**_fmt)
+            self.blocks[2]['text']['text'] = ":medal: Team {team[lnk]} is ranked *{team[place]}* with {team[score]} points total!".format(**_fmt)
+            if self.config.post_solve_only_top10 and solve.team['place'] not in TOP10:
+                post_to_slack = False
 
         if self.config.post_first_blood:
             if not self.cache.solves or not any([s for s in self.cache.solves if s.get('challenge_id') == new_solve['challenge_id']]):
