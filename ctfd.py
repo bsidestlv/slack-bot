@@ -53,11 +53,11 @@ BLOCKS = [
 class CTFd():
     """Blocks template."""
     config = CTFdConfig(
-        post_solve=os.getenv('CTFD_POST_SOLVE', None),
+        post_solve=os.getenv('CTFD_POST_SOLVE'),
         post_solve_img=os.getenv('CTFD_POST_SOLVE_IMG', 'https://i.imgur.com/SdvQx2F.jpg'),
-        post_first_blood=os.getenv('CTFD_POST_FIRST_BLOOD', False),
+        post_first_blood=os.getenv('CTFD_POST_FIRST_BLOOD'),
         post_first_blood_img=os.getenv('CTFD_POST_FIRST_BLOOD_IMG', 'https://i.imgur.com/eLm2JG3.jpg'),
-        post_place_change=os.getenv('CTFD_POST_PLACE_CHANGE', 'True'),
+        post_place_change=os.getenv('CTFD_POST_PLACE_CHANGE'),
         post_place_change_img=os.getenv('CTFD_POST_PLACE_CHANGE_IMG', 'https://i.imgur.com/SdvQx2F.jpg'),
     )
 
