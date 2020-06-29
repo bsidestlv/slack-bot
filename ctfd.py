@@ -1,15 +1,18 @@
 """ CTFd Helper Class."""
 import os
 import sys
+import logging
 
 from collections import namedtuple
 
 import requests
 
-from flask.logging import create_logger
+from dotenv import load_dotenv
+from slack.errors import SlackApiError
 from requests.compat import urljoin
 from redis_collections import List, Dict
-from slack.errors import SlackApiError
+
+load_dotenv(verbose=True)
 
 CTFD_TOKEN = os.getenv('CTFD_TOKEN')
 CTFD_CHANNELS = os.getenv('CTFD_CHANNELS').split(',')
@@ -61,10 +64,13 @@ class CTFd():
         post_place_change_img=os.getenv('CTFD_POST_PLACE_CHANGE_IMG', 'https://i.imgur.com/SdvQx2F.jpg'),
     )
 
+    _api = requests.Session()
+    solve = None
+    blocks = BLOCKS.copy()
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, app, base_url, redis, slack_client):
         """ Init. """
-        self._logger = create_logger(app)
-
         if not all(REQUIRED_KEYS):
             self._logger.critical('%s must be set.', REQUIRED_KEYS)
             sys.exit(1)
@@ -73,11 +79,8 @@ class CTFd():
         self.cache = CTFdCache(solves=List(key='ctfd_submission_db', redis=redis),
                                teams=Dict(key='ctfd_teams', redis=redis),
                                users=Dict(key='ctfd_users', redis=redis))
-        self.solve = None
-        self._api = requests.Session()
         self._api.headers.update({'Authorization': f'Token {CTFD_TOKEN}', 'Content-type': 'application/json'})
         self._slack = slack_client
-        self.blocks = BLOCKS.copy()
 
         self.bind_route(app)
 
@@ -103,7 +106,7 @@ class CTFd():
             getattr(self.cache, typ)[i] = obj
         return obj
 
-    def set_solve(self, new_solve):
+    def check_solve(self, new_solve):
         """ Get basic info and set solve template. """
         solve = CTFdSolve(
             clng=new_solve['challenge'],
@@ -120,7 +123,6 @@ class CTFd():
 
         post_to_slack = False
 
-        # Set default solve msg
         if self.config.post_solve:
             post_to_slack = True
             self.blocks[0]['text']['text'] = ":flags: {user[lnk]} (Team: {team[lnk]}) just solved {clng[lnk]} and got *{clng[value]}* points!".format(**_fmt)
@@ -128,19 +130,16 @@ class CTFd():
             self.blocks[0]['accessory']['alt_text'] = 'Challenge solved!'
             self.blocks[2]['text']['text'] = ":medal: Team {team[lnk]} is now ranked *{team[place]}* with {team[score]} points total!".format(**_fmt)
 
-        # Check if this solve is first blood.
-        if not self.cache.solves or not any([s for s in self.cache.solves if s.get('challenge_id') == new_solve['challenge_id']]):
-            if self.config.post_first_blood:
+        if self.config.post_first_blood:
+            if not self.cache.solves or not any([s for s in self.cache.solves if s.get('challenge_id') == new_solve['challenge_id']]):
                 post_to_slack = True
                 self.blocks[0]['text']['text'] = "*First blood!!!*\n\n{user[lnk]} (Team: {team[lnk]}) is _*first*_ to solve {clng[lnk]}".format(**_fmt)
                 self.blocks[0]['accessory']['image_url'] = self.config.post_first_blood_img
                 self.blocks[0]['accessory']['alt_text'] = 'First blood!'
                 self.blocks[2]['text']['text'] = ":medal: Team {team[lnk]} is now ranked *{team[place]}* with {team[score]} points!".format(**_fmt)
 
-
-        # Check if solving team moved up to top10
-        if solve.team['place'] in TOP10 and solve.team['place'] != solve.team_old['place']:
-            if self.config.post_place_change:
+        if self.config.post_place_change:
+            if solve.team['place'] in TOP10 and solve.team['place'] != solve.team_old['place']:
                 post_to_slack = True
                 _fmt['place_emoji'] = ':medal:'
                 if solve.team['place'] in TOP10_EMOJI.keys():
@@ -157,13 +156,13 @@ class CTFd():
         @app.route('/ctfd_cron')
         def _check_solves():
             new_solves = self._request('GET', 'submissions', params={'type': 'correct'})
-            diff = len(new_solves)-len(self.cache.solves)
+            diff = len(new_solves) - len(self.cache.solves)
             if not diff:
                 return {'status': 'noop'}
             self._logger.debug('CTFd: Got %d new solves!', diff)
-            for solve in new_solves[len(self.cache.solves):]:
+            for solve in new_solves[-diff:]:
                 self._logger.debug(solve)
-                if self.set_solve(solve):
+                if self.check_solve(solve):
                     try:
                         for channel in CTFD_CHANNELS:
                             self._slack.chat_postMessage(channel=channel, blocks=self.blocks)
@@ -171,4 +170,5 @@ class CTFd():
                         assert exc.response["ok"] is False
                         assert exc.response["error"]  # str like 'invalid_auth', 'channel_not_found'
                         self._logger.error('Failed due to %s', exc.response['error'])
+            self.cache.solves.extend(new_solves[-diff:])
             return {'status': 'ok'}
