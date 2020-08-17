@@ -228,11 +228,11 @@
         },
         "slackeventsapi": {
             "hashes": [
-                "sha256:373e9609559bac57e3520384b6fee72f2caa13f083879fe7c53be85317fb97f2",
-                "sha256:d29701ce1b99f8a0c712f0abc76bd20c437ee501137749d649ad7e9395e1e272"
+                "sha256:1582964860b9e00b721ddfc7402defdd02bdf73f48d4cee7fb952a3b27db45fb",
+                "sha256:6baa2bf12b5a9d312bf02836720f3ea3b730377449d67ea92ec63fc7c02c7c30"
             ],
             "index": "pypi",
-            "version": "==2.2.0"
+            "version": "==2.2.1"
         },
         "urllib3": {
             "hashes": [
