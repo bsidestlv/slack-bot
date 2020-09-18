@@ -42,10 +42,10 @@
         },
         "attrs": {
             "hashes": [
-                "sha256:0ef97238856430dcf9228e07f316aefc17e8939fc8507e18c6501b761ef1a42a",
-                "sha256:2867b7b9f8326499ab5b0e2d12801fa5c98842d2cbd22b35112ae04bf85b4dff"
+                "sha256:26b54ddbbb9ee1d34d5d3668dd37d6cf74990ab23c828c2888dccdceee395594",
+                "sha256:fce7fc47dfc976152e82d53ff92fa0407700c21acd20886a13777a0d20e655dc"
             ],
-            "version": "==20.1.0"
+            "version": "==20.2.0"
         },
         "certifi": {
             "hashes": [
@@ -175,10 +175,10 @@
         },
         "pyee": {
             "hashes": [
-                "sha256:a0fee808414a4fc077d81be80dfe785879430b03101088747714c045292751c0",
-                "sha256:c908d1ecb32918bbf7dbb895a093153b0ca1ed8f04fc067d98bd4c5917aeb3d8"
+                "sha256:30c3e90bb44311af98e0958cae7c5a3acbbfb35b0ec87f7fa1275ba9e12e31f3",
+                "sha256:a7bbe21b7fb2ba05fba48af685e8e4df81a71bcb8861d4046dd72089675ef605"
             ],
-            "version": "==7.0.2"
+            "version": "==7.0.3"
         },
         "python-dotenv": {
             "hashes": [
@@ -220,11 +220,11 @@
         },
         "slackclient": {
             "hashes": [
-                "sha256:716bca814724ef5d8b58531476c3b5eec2acc4c2102edb99e63bd8f512a29aa7",
-                "sha256:7f50c644a8b7ee4d09d271b5dec9151cc0c50b07d333677a00a5cd5208ae34df"
+                "sha256:1de52256a0c5cd7a52d09572500462ada90c4820e86e56efefcea6be41ca58da",
+                "sha256:be1d3e202c3c6d69203059b387be2ee53fe0d5478080b41148565f3786ade3a4"
             ],
             "index": "pypi",
-            "version": "==2.8.1"
+            "version": "==2.9.0"
         },
         "slackeventsapi": {
             "hashes": [
@@ -289,10 +289,10 @@
         },
         "isort": {
             "hashes": [
-                "sha256:60a1b97e33f61243d12647aaaa3e6cc6778f5eb9f42997650f1cc975b6008750",
-                "sha256:d488ba1c5a2db721669cc180180d5acf84ebdc5af7827f7aaeaa75f73cf0e2b8"
+                "sha256:171c5f365791073426b5ed3a156c2081a47f88c329161fd28228ff2da4c97ddb",
+                "sha256:ba91218eee31f1e300ecc079ef0c524cea3fc41bfbb979cbdf5fd3a889e3cfed"
             ],
-            "version": "==5.4.2"
+            "version": "==5.5.2"
         },
         "lazy-object-proxy": {
             "hashes": [
