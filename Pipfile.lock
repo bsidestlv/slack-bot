@@ -262,10 +262,11 @@
         },
         "redis-collections": {
             "hashes": [
-                "sha256:b0c1213b57ed2d5a351dcec05826ce42de9bae88f74c12f2917aa7523f94269e"
+                "sha256:57f51931c36f84e1ec11808c3d3e4b2146d2dc6a62b55c1d58778cb38aacf519",
+                "sha256:b018cddabfc9f2bdae63a771607051e5f88857219e421281168a67dfe17aa1d1"
             ],
             "index": "pypi",
-            "version": "==0.8.1"
+            "version": "==0.9.1"
         },
         "requests": {
             "hashes": [
